@@ -68,6 +68,27 @@
   .legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:14px;font-size:12px;color:var(--slate)}
   .legend span{display:inline-flex;align-items:center;gap:7px}
   .legend .sw{width:14px;height:14px;border-radius:4px;flex:0 0 auto}
+  .dashleg{display:inline-flex;align-items:center;gap:7px}
+  .dashleg i{width:20px;height:0;flex:0 0 auto;border-top:1.5px dashed #999;background:none;border-radius:0}
+  .countbox{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+  .countbox .cc{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#FCFBF9}
+  .countbox .cc .lab{font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .countbox .cc .num{font-size:22px;font-weight:700;letter-spacing:-.01em;margin-top:4px}
+  .countbox .cc .sub{font-size:11px;color:var(--slate);margin-top:2px}
+  .countbox .cc.red .lab{color:var(--coral)} .countbox .cc.red .num{color:var(--coral)}
+  .countbox .cc.green .lab{color:var(--emerald)} .countbox .cc.green .num{color:var(--emerald)}
+  .methodbox{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-top:20px;overflow:hidden}
+  .method-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;background:none;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;color:var(--ink);padding:16px 20px;text-align:left}
+  .method-toggle:hover{background:#FCFBF9}
+  .method-toggle .chev{color:var(--slate);transition:transform .2s}
+  .method-toggle.open .chev{transform:rotate(180deg)}
+  .method-body{display:none;padding:4px 22px 22px;font-size:13px;color:var(--slate);line-height:1.6}
+  .method-body.open{display:block}
+  .method-body h4{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin:18px 0 8px}
+  .method-body p{margin-bottom:10px}
+  .method-body ul{margin:0 0 10px;padding-left:20px}
+  .method-body li{margin-bottom:7px}
+  .method-body .warn-strong{background:var(--accent-soft);border:1px solid #d5d9f0;border-radius:10px;padding:12px 14px;color:var(--ink)}
   .canvas-box{position:relative;width:100%}
   canvas{width:100%;display:block}
 
@@ -221,11 +242,42 @@
         </div>
       </div>
       <div class="canvas-box"><canvas id="chart"></canvas></div>
+      <div class="countbox" id="countBox"></div>
       <div class="legend">
         <span><i class="sw" style="background:rgba(214,90,76,.5)"></i>Não paga</span>
         <span><i class="sw" style="background:rgba(21,155,99,.55)"></i>Paga</span>
-        <span><i class="sw" style="height:0;border:none;border-top:2px solid var(--ink)"></i>Serviço da dívida</span>
-        <span><i class="sw" style="height:0;border:none;border-top:2px dashed var(--ink)"></i>Cenário intermediário</span>
+        <span><i class="sw" style="height:0;border:none;border-top:2px solid var(--ink);width:20px"></i>Serviço da dívida</span>
+        <span class="dashleg"><i></i>Cenário intermediário</span>
+      </div>
+    </div>
+
+    <div class="methodbox">
+      <button class="method-toggle" id="methodToggle">
+        <span>Como ler este resultado · premissas e limitações do modelo</span>
+        <span class="chev">▾</span>
+      </button>
+      <div class="method-body" id="methodBody">
+        <p class="warn-strong">Esta ferramenta é um <b>insumo de apoio à análise</b>, não um fator de decisão automático. O resultado deve ser lido junto com o julgamento do analista e as demais evidências do processo de crédito.</p>
+
+        <h4>Como o cálculo é feito</h4>
+        <p>A simulação de Monte Carlo gera milhares de cenários. Em cada cenário sorteia-se uma <b>margem EBITDA</b> (dentro da faixa informada) e uma <b>trajetória de receita</b>, e verifica-se se o caixa gerado cobre o serviço da dívida de cada ano. A probabilidade de pagar é a fração de cenários em que o caixa foi suficiente.</p>
+        <p>Caixa do ano = <b>receita × margem EBITDA × conversão em caixa + financiamento do ano</b>. Paga quando o caixa ≥ serviço da dívida (juros + amortização).</p>
+
+        <h4>Premissas assumidas</h4>
+        <ul>
+          <li><b>Margem única no período:</b> em cada cenário, a mesma margem vale para todos os anos (a margem é tratada como característica estrutural do negócio, não como algo que muda aleatoriamente ano a ano).</li>
+          <li><b>Receita encadeada:</b> só a receita do 1º ano é informada. Os anos seguintes crescem/caem a partir da receita <b>sorteada</b> do ano anterior, usando as faixas de variação que você definiu. Assim, um ano fraco propaga o efeito para os seguintes.</li>
+          <li><b>Receita como premissa do analista:</b> a receita-base e as faixas de variação são definidas por você (refletindo o impacto esperado do investimento), não estimadas pela ferramenta.</li>
+          <li><b>Conversão de EBITDA em caixa</b> é um percentual fixo — não modela oscilações de capital de giro, capex irregular ou variação de impostos.</li>
+          <li><b>Serviço da dívida determinístico</b> — assume os valores informados de juros e amortização. Não modela juros flutuantes (CDI/Selic).</li>
+        </ul>
+
+        <h4>Limitações e cuidados</h4>
+        <ul>
+          <li><b>Precisão de eventos raros:</b> probabilidades muito baixas (abaixo de ~1%) ou muito altas oscilam entre execuções. Nesses casos, rode com mais cenários e trate o número como aproximado.</li>
+          <li>O modelo <b>não substitui</b> análise de garantias, histórico de crédito, setor, gestão ou ambiente macroeconômico.</li>
+          <li>Os resultados dependem inteiramente da qualidade das premissas informadas. Premissas otimistas produzem probabilidades otimistas.</li>
+        </ul>
       </div>
     </div>
   </section>
@@ -329,6 +381,13 @@ function fmtCompact(v){
   return 'R$ '+fmtCurrency(v);
 }
 function parseNum(str){ return parseFloat(String(str).replace(/\./g,'').replace(',','.'))||0; }
+function parsePct(str){
+  // percentuais são valores pequenos: aceita "18,6" ou "18.6" como 18.6.
+  let s=String(str).trim();
+  if(s==='') return 0;
+  if(s.indexOf(',')>=0){ s=s.replace(/\./g,'').replace(',','.'); }  // vírgula = decimal (BR)
+  return parseFloat(s)||0;                                          // senão, ponto já é decimal
+}
 function bindCurrency(el){ el.addEventListener('blur',()=>{ const n=parseNum(el.value); el.value=n?fmtCurrency(n):''; }); }
 function rgba(hex,a){ const n=parseInt(hex.slice(1),16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
 function rr(ctx,x,y,w,h,r){
@@ -350,10 +409,33 @@ scenNum.addEventListener('blur',()=>{ const v=clampScen(parseNum(scenNum.value)|
 
 /* ---------- Linhas de dívida por ano ---------- */
 const defaultDebt=[
-  {ano:2025,receita:10000000,fin:0,juros:800000,amort:1000000,upMin:null,upMax:null,dnMin:null,dnMax:null},
-  {ano:2026,receita:10000000,fin:0,juros:700000,amort:1400000,upMin:null,upMax:null,dnMin:null,dnMax:null},
-  {ano:2027,receita:10000000,fin:0,juros:500000,amort:1000000,upMin:null,upMax:null,dnMin:null,dnMax:null},
+  {ano:2026,receita:10000000,fin:0,juros:800000,amort:1000000,upMin:null,upMax:null,dnMin:null,dnMax:null},
+  {ano:2027,receita:'',fin:0,juros:700000,amort:1400000,upMin:null,upMax:null,dnMin:null,dnMax:null},
+  {ano:2028,receita:'',fin:0,juros:500000,amort:1000000,upMin:null,upMax:null,dnMin:null,dnMax:null},
 ];
+function reindexRows(){
+  const rows=[...document.querySelectorAll('.yblock')];
+  rows.forEach((row,i)=>{
+    const recWrap=row.querySelector('.rec-wrap');
+    const hint=row.querySelector('.var-hint');
+    const isLast=(i===rows.length-1);
+    if(i===0){
+      recWrap.style.display='';
+      hint.textContent='Receita líquida FIXA do ano-base. A variação abaixo define o crescimento do PRÓXIMO ano (não se aplica a este).';
+    }else{
+      recWrap.style.display='none';
+      hint.textContent='Receita = ano anterior × variação preenchida NAQUELE ano. A variação abaixo define o crescimento do próximo ano.';
+    }
+    // marca visualmente a variação do último ano como "sem efeito" (não há ano seguinte)
+    const varboxes=row.querySelectorAll('.varbox');
+    varboxes.forEach(vb=>{ vb.style.opacity=isLast?'0.45':'1'; });
+    let note=row.querySelector('.lastvar-note');
+    if(isLast){
+      if(!note){ note=document.createElement('p'); note.className='lastvar-note'; note.style.cssText='font-size:11px;color:var(--slate);font-style:italic;margin:2px 0 6px'; row.querySelector('.var-hint').after(note); }
+      note.textContent='Como é o último ano, a variação abaixo não é usada (não há ano seguinte para crescer).';
+    } else if(note){ note.remove(); }
+  });
+}
 function addDebtRow(d={ano:'',receita:'',fin:0,juros:'',amort:'',upMin:null,upMax:null,dnMin:null,dnMax:null}){
   const row=document.createElement('div'); row.className='yblock';
   const pctIn=(cls,val)=>`<div class="prefix"><span style="left:auto;right:11px;font-size:12px">%</span><input class="${cls}" inputmode="numeric" placeholder="—" value="${val!=null?val:''}" style="padding-left:11px;padding-right:30px"></div>`;
@@ -364,11 +446,12 @@ function addDebtRow(d={ano:'',receita:'',fin:0,juros:'',amort:'',upMin:null,upMa
       <button class="rm" title="Remover">&times;</button>
     </div>
     <div class="ymoney">
-      <div><span class="mini">Receita líquida (R$)</span><input class="d-receita" inputmode="numeric" value="${d.receita?fmtCurrency(d.receita):''}"></div>
-      <div><span class="mini">Financiamento (R$)</span><input class="d-fin" inputmode="numeric" value="${fmtCurrency(d.fin||0)}"></div>
+      <div class="rec-wrap"><span class="mini">Receita líquida (R$)</span><input class="d-receita" inputmode="numeric" value="${d.receita?fmtCurrency(d.receita):''}"></div>
+      <div class="fin-wrap"><span class="mini">Financiamento (R$)</span><input class="d-fin" inputmode="numeric" value="${fmtCurrency(d.fin||0)}"></div>
       <div><span class="mini">Juros (R$)</span><input class="d-juros" inputmode="numeric" value="${d.juros?fmtCurrency(d.juros):''}"></div>
       <div><span class="mini">Amortização (R$)</span><input class="d-amort" inputmode="numeric" value="${d.amort?fmtCurrency(d.amort):''}"></div>
     </div>
+    <p class="var-hint" style="font-size:11px;color:var(--slate);margin:2px 0 8px"></p>
     <div class="varbox">
       <div class="varhead"><span class="vartag up">▲ Receita p/ cima</span></div>
       <div class="ymoney">
@@ -383,9 +466,10 @@ function addDebtRow(d={ano:'',receita:'',fin:0,juros:'',amort:'',upMin:null,upMa
         <div><span class="mini">máximo (%)</span>${pctIn('d-dnmax',d.dnMax)}</div>
       </div>
     </div>`;
-  row.querySelector('.rm').onclick=()=>row.remove();
+  row.querySelector('.rm').onclick=()=>{ row.remove(); reindexRows(); };
   ['.d-receita','.d-fin','.d-juros','.d-amort'].forEach(sel=>bindCurrency(row.querySelector(sel)));
   $('#debtRows').appendChild(row);
+  reindexRows();
 }
 defaultDebt.forEach(addDebtRow);
 $('#addRow').onclick=()=>addDebtRow();
@@ -398,6 +482,7 @@ $('#editBtn').onclick=openModal;
 $('#cancelBtn').onclick=closeModal;
 $('#overlay').onclick=e=>{ if(e.target===$('#overlay')) closeModal(); };
 $('#distInfoBtn').onclick=()=>$('#distInfoPop').classList.toggle('open');
+$('#methodToggle').onclick=()=>{ $('#methodToggle').classList.toggle('open'); $('#methodBody').classList.toggle('open'); };
 
 /* ---------- Amostradores ---------- */
 function sampleTri(a,c,b){ const u=Math.random(),f=(c-a)/(b-a); return u<f? a+Math.sqrt(u*(b-a)*(c-a)) : b-Math.sqrt((1-u)*(b-a)*(b-c)); }
@@ -422,72 +507,62 @@ function sampler(base,dev,mode,dir){
 $('#runBtn').onclick=runSim;
 function runSim(){
   const N=clampScen(parseNum(scenNum.value)||100000);
-  const margemBase=parseNum($('#margemBase').value)/100;
-  const margemVar =parseNum($('#margemVar').value)/100;
+  const margemBase=parsePct($('#margemBase').value)/100;
+  const margemVar =parsePct($('#margemVar').value)/100;
   const dist=$('#dist').value;
   const conv=parseFloat($('#conv').value);
 
-  let debts=[...document.querySelectorAll('.yblock')].map(r=>{
-    const pv=sel=>{ const v=r.querySelector(sel).value.trim(); return v===''?null:parseNum(v)/100; };
+  let debts=[...document.querySelectorAll('.yblock')].map((r,idx)=>{
+    const pv=sel=>{ const v=r.querySelector(sel).value.trim(); return v===''?null:parsePct(v)/100; };
     return {
+      idx,
       ano:r.querySelector('.d-ano').value.trim(),
-      receita:parseNum(r.querySelector('.d-receita').value),
+      receita:parseNum(r.querySelector('.d-receita').value),  // só o 1º ano tem valor
       fin:parseNum(r.querySelector('.d-fin').value),
       servico:parseNum(r.querySelector('.d-juros').value)+parseNum(r.querySelector('.d-amort').value),
-      upMin:pv('.d-upmin'), upMax:pv('.d-upmax'),   // crescimento (positivos)
-      dnMin:pv('.d-dnmin'), dnMax:pv('.d-dnmax')    // queda (magnitudes positivas)
+      upMin:pv('.d-upmin'), upMax:pv('.d-upmax'),
+      dnMin:pv('.d-dnmin'), dnMax:pv('.d-dnmax')
     };
   }).filter(d=>d.ano && d.servico>0);
 
   if(!margemBase || !debts.length){ alert('Preencha a margem e ao menos um ano de dívida.'); return; }
-  if(debts.some(d=>!d.receita)){ alert('Preencha a receita líquida de cada ano.'); return; }
+  if(!debts[0].receita){ alert('Preencha a receita líquida do primeiro ano.'); return; }
 
   const drawM=sampler(margemBase,margemVar,dist,'ambos');
-  // Modelo de receita: cada ano cresce/cai a partir da receita INFORMADA do ano anterior,
-  // usando os intervalos de variação (%) DO ANO ANTERIOR. O 1º ano usa os seus próprios.
-  // snapshot dos campos crus de variação (antes de qualquer sobrescrita)
-  debts.forEach(d=>{ d._upMin=d.upMin; d._upMax=d.upMax; d._dnMin=d.dnMin; d._dnMax=d.dnMax; });
-  debts.forEach((d,j)=>{
-    const src = j>0 ? debts[j-1] : d;
-    d.revBase = src.receita;
-    d.revBaseYear = j>0 ? src.ano : null;
-    // herda os intervalos de variação do ANO ANTERIOR (a partir do snapshot cru)
-    let upMin=src._upMin, upMax=src._upMax, dnMin=src._dnMin, dnMax=src._dnMax;
-    const upOn = (upMax!=null && upMax>0) || (upMin!=null && upMin>0);
-    const dnOn = (dnMax!=null && dnMax>0) || (dnMin!=null && dnMin>0);
+
+  // Prepara os intervalos de variação de CADA ano (aplicados sobre a receita do ano anterior).
+  debts.forEach(d=>{
+    const upOn=(d.upMax!=null && d.upMax>0)||(d.upMin!=null && d.upMin>0);
+    const dnOn=(d.dnMax!=null && d.dnMax>0)||(d.dnMin!=null && d.dnMin>0);
+    let upMin=d.upMin, upMax=d.upMax, dnMin=d.dnMin, dnMax=d.dnMax;
     if(upOn){ upMin=Math.max(0,upMin||0); upMax=Math.max(upMin,upMax||upMin); }
     if(dnOn){ dnMin=Math.max(0,dnMin||0); dnMax=Math.max(dnMin,dnMax||dnMin); }
-    d.upOn=upOn; d.dnOn=dnOn;
-    d.upMin=upMin; d.upMax=upMax; d.dnMin=dnMin; d.dnMax=dnMax;
-    // fator de crescimento mínimo/máximo alcançável (para limites do eixo)
-    let gMin=0, gMax=0;
-    if(upOn && dnOn){ gMin=-dnMax; gMax=+upMax; }
-    else if(upOn){ gMin=+upMin; gMax=+upMax; }
-    else if(dnOn){ gMin=-dnMax; gMax=-dnMin; }
-    d.recLo = d.revBase*(1+gMin);
-    d.recHi = d.revBase*(1+gMax);
-    d.recMid= (d.recLo+d.recHi)/2;
+    d.upOn=upOn; d.dnOn=dnOn; d.upMin=upMin; d.upMax=upMax; d.dnMin=dnMin; d.dnMax=dnMax;
   });
-  const drawR=debts.map(d=>{
-    if(!d.upOn && !d.dnOn) return ()=>d.revBase;                 // receita fixa
-    const upLo=d.revBase*(1+d.upMin), upHi=d.revBase*(1+d.upMax);
-    const dnLo=d.revBase*(1-d.dnMax), dnHi=d.revBase*(1-d.dnMin); // dnLo<dnHi (menor queda = mais receita)
-    if(d.upOn && d.dnOn){
-      return ()=> Math.random()<0.5 ? upLo+Math.random()*(upHi-upLo)   // 50/50 entre os dois blocos
-                                    : dnLo+Math.random()*(dnHi-dnLo);
-    }
-    if(d.upOn) return ()=>upLo+Math.random()*(upHi-upLo);
-    return ()=>dnLo+Math.random()*(dnHi-dnLo);                     // só queda
-  });
+  // Sorteia um fator de crescimento (multiplicador) a partir dos intervalos de um ano.
+  function drawGrowth(d){
+    if(!d.upOn && !d.dnOn) return 1;                       // sem variação
+    const up=()=> 1 + (d.upMin + Math.random()*(d.upMax-d.upMin));
+    const dn=()=> 1 - (d.dnMin + Math.random()*(d.dnMax-d.dnMin));
+    if(d.upOn && d.dnOn) return Math.random()<0.5 ? up() : dn();
+    return d.upOn ? up() : dn();
+  }
+
   const counts=debts.map(()=>0); let allOk=0;
   const caixaArr=debts.map(()=>new Float64Array(N));
 
   for(let i=0;i<N;i++){
-    let m=drawM(); if(m<0)m=0;
+    let m=drawM(); if(m<0)m=0;               // UMA margem para todo o período (mesmo cenário)
     let all=true;
+    let revPrev=0;
     for(let j=0;j<debts.length;j++){
-      const rev=drawR[j]();
-      const caixa=rev*m*conv + debts[j].fin;   // receita variável × margem × conversão + financiamento
+      // Ano-base (1º): receita FIXA informada.
+      // Anos seguintes: crescem sobre a receita SORTEADA do ano anterior (composto),
+      //   usando a variação preenchida NO ANO ANTERIOR (debts[j-1]).
+      const rev = j===0 ? debts[0].receita
+                        : revPrev*drawGrowth(debts[j-1]);
+      revPrev = rev;
+      const caixa=rev*m*conv + debts[j].fin;
       caixaArr[j][i]=caixa;
       if(caixa>=debts[j].servico) counts[j]++; else all=false;
     }
@@ -497,30 +572,39 @@ function runSim(){
   const BINS=46;
   debts.forEach((d,j)=>{
     d.prob=counts[j]/N;
-    // cenário base = receita central × margem base. Quando há DOIS blocos (cima e baixo),
-    // o centro cai no vão vazio entre eles, então não há um "base" coerente => não desenha.
-    d.hasBase = !(d.upOn && d.dnOn);
-    const recCentral = d.upOn && !d.dnOn ? (d.revBase*(1+d.upMin)+d.revBase*(1+d.upMax))/2
-                     : d.dnOn && !d.upOn ? (d.revBase*(1-d.dnMin)+d.revBase*(1-d.dnMax))/2
-                     : d.revBase;
-    d.base=recCentral*margemBase*conv + d.fin;
+    d.payCount=counts[j]; d.noCount=N-counts[j]; d.N=N;
     const a=caixaArr[j]; a.sort();
     const q=t=>a[Math.min(N-1,Math.floor(t*N))];
     d.p10=q(.10); d.p25=q(.25); d.p50=q(.50); d.p75=q(.75); d.p90=q(.90);
-    // limites teóricos do histograma = cantos do cenário:
-    //   piso  = menor receita × menor margem   (pior caso coerente)
-    //   teto  = maior receita × maior margem   (melhor caso)
-    const mLo=Math.max(0,margemBase-margemVar), mHi=margemBase+margemVar;
-    d.mLo=mLo; d.mHi=mHi;
-    d.varReceita=(d.upOn||d.dnOn);
-    let mn=d.recLo*mLo*conv + d.fin;   // canto inferior esquerdo
-    let mx=d.recHi*mHi*conv + d.fin;   // canto superior direito
-    // segurança: garante que todas as amostras caibam
-    mn=Math.min(mn,a[0]); mx=Math.max(mx,a[N-1]);
+    // cenário intermediário = mediana empírica do caixa (P50) — robusto a encadeamento e blocos
+    d.base=d.p50; d.hasBase=true;
+    // limites do histograma: usa os percentis extremos observados + folga pequena,
+    // com trava para conter a linha do serviço dentro da área do gráfico.
+    let mn=a[0], mx=a[N-1];
     if(!(mx>mn)){ mx=mn+1; }
+    d.hist=null; // preenchido abaixo
+    // guarda margem p/ régua (informativa)
+    d.mLo=Math.max(0,margemBase-margemVar); d.mHi=margemBase+margemVar;
+    d.varReceita=(d.upOn||d.dnOn) || (j>0);
+    // margem de corte (para referência): margem que empata caixa=serviço na receita mediana
+    d.hRawMin=mn; d.hRawMax=mx;
+    d.hist=[]; // placeholder; bins montados depois de definir limites com trava do serviço
+  });
+
+  // ----- limites do eixo com TRAVA do serviço dentro da área -----
+  debts.forEach((d)=>{
+    let mn=d.hRawMin, mx=d.hRawMax;
+    const pad=(mx-mn)*0.04 || Math.max(1,mx*0.04);
+    mn-=pad; mx+=pad;
+    // trava: garante que o serviço fique visível dentro do eixo (com margem de 6%)
+    d.servInside = (d.servico>=d.hRawMin && d.servico<=d.hRawMax);
+    if(d.servico<mn){ mn=d.servico-(mx-mn)*0.06; }        // serviço abaixo de tudo (paga sempre)
+    if(d.servico>mx){ mx=d.servico+(mx-mn)*0.06; }        // serviço acima de tudo (nunca paga)
+    if(!(mx>mn)) mx=mn+1;
     const bw=(mx-mn)/BINS;
+    const a=caixaArr[d.idx];
     const hist=new Array(BINS).fill(0);
-    for(let i=0;i<N;i++){ let b=Math.floor((a[i]-mn)/bw); if(b<0)b=0; if(b>=BINS)b=BINS-1; hist[b]++; }
+    for(let i=0;i<a.length;i++){ let b=Math.floor((a[i]-mn)/bw); if(b<0)b=0; if(b>=BINS)b=BINS-1; hist[b]++; }
     d.hist=hist; d.hMin=mn; d.hMax=mx; d.hBw=bw; d.hMaxCount=Math.max(...hist);
   });
   let critical=0; debts.forEach((d,i)=>{ if(d.prob<debts[critical].prob) critical=i; });
@@ -664,36 +748,27 @@ function drawChart(s){
     }
   }
 
-  // ===== limites das bordas: linhas pontilhadas (canto inferior e superior) =====
-  // Borda esquerda = menor receita × menor margem. Borda direita = maior receita × maior margem.
-  const mLo=d.mLo, mHi=d.mHi, varR=d.varReceita;
-  function marginBound(cashVal, m, rev, side){
+  // ===== réguas do topo: limites de caixa REAIS observados + referência de margem =====
+  const mLo=d.mLo, mHi=d.mHi;
+  const fmtPct=v=>(v*100).toLocaleString('pt-BR',{maximumFractionDigits:2})+'%';
+  function edgeLabel(cashVal, side){
+    if(cashVal<mn || cashVal>mx) return;   // fora da área visível: não desenha
     const x=X(cashVal);
-    ctx.strokeStyle='rgba(44,58,134,.55)'; ctx.lineWidth=1.4; ctx.setLineDash([4,4]);
+    ctx.strokeStyle='rgba(44,58,134,.45)'; ctx.lineWidth=1.2; ctx.setLineDash([4,4]);
     ctx.beginPath(); ctx.moveTo(x,padT); ctx.lineTo(x,padT+H); ctx.stroke(); ctx.setLineDash([]);
     ctx.textBaseline='bottom'; ctx.textAlign = side==='left' ? 'left' : 'right';
     const tx = side==='left' ? x+4 : x-4;
-    // linha 1: margem
-    ctx.fillStyle='#2C3A86'; ctx.font='700 12px Inter, sans-serif';
-    ctx.fillText('marg. '+(m*100).toFixed(0)+'%', tx, padT-29);
-    // linha 2: receita do canto (só quando varia)
-    ctx.fillStyle='#616977'; ctx.font='10px Inter, sans-serif';
-    if(varR){ ctx.fillText('rec. '+fmtCompact(rev), tx, padT-17); }
-    // linha 3: caixa resultante
-    ctx.fillStyle='#171A20'; ctx.font='600 10px Inter, sans-serif';
-    ctx.fillText(fmtCompact(cashVal), tx, varR?padT-5:padT-17);
+    ctx.fillStyle='#616977'; ctx.font='600 10px Inter, sans-serif';
+    ctx.fillText(side==='left'?'menor caixa gerado':'maior caixa gerado', tx, padT-17);
+    ctx.fillStyle='#171A20'; ctx.font='700 11px Inter, sans-serif';
+    ctx.fillText(fmtCompact(cashVal), tx, padT-4);
   }
-  marginBound(mn, mLo, d.recLo, 'left');
-  marginBound(mx, mHi, d.recHi, 'right');
-  // rótulo discreto do que a régua representa
+  // extremos REAIS do caixa simulado (não afetados pela trava do serviço)
+  edgeLabel(d.hRawMin, 'left');
+  edgeLabel(d.hRawMax, 'right');
+  // referência central: margem considerada (única no período)
   ctx.fillStyle='#616977'; ctx.font='600 10px Inter, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
-  let ruleTxt = 'margem '+(mLo*100).toFixed(0)+'%–'+(mHi*100).toFixed(0)+'%';
-  if(varR){
-    const parts=[];
-    if(d.upOn) parts.push('+'+(d.upMin*100).toFixed(0)+'% a +'+(d.upMax*100).toFixed(0)+'%');
-    if(d.dnOn) parts.push('−'+(d.dnMin*100).toFixed(0)+'% a −'+(d.dnMax*100).toFixed(0)+'%');
-    ruleTxt += '  ·  receita '+parts.join(' ou ')+(d.revBaseYear?' sobre '+d.revBaseYear:'');
-  }
+  let ruleTxt='margem '+fmtPct(mLo)+' – '+fmtPct(mHi)+' (única no período)';
   ctx.fillText(ruleTxt, padL+W/2, padT-17);
 
   // linha do serviço
@@ -705,28 +780,23 @@ function drawChart(s){
   if(servX > padL+W-70){ ctx.textAlign='right'; ctx.fillText(servLbl, servX-5, padT+3); }
   else{ ctx.textAlign='left'; ctx.fillText(servLbl, servX+5, padT+3); }
 
-  // rótulos das zonas: % não paga (esquerda) e % paga (direita)
-  const midLeft=padL+(servX-padL)/2;
-  const midRight=servX+(padL+W-servX)/2;
-  if(servX-padL>60){
-    ctx.fillStyle='#D65A4C'; ctx.textAlign='center'; ctx.textBaseline='top';
-    ctx.font='700 22px Inter, sans-serif'; ctx.fillText(noLbl, midLeft, padT+18);
-    ctx.font='600 11px Inter, sans-serif'; ctx.fillText('não paga', midLeft, padT+44);
-  }
-  if(padL+W-servX>50){
-    const rlx=Math.min(midRight, padL+W-22);
-    ctx.fillStyle='#159B63'; ctx.textAlign='center'; ctx.textBaseline='top';
-    ctx.font='700 18px Inter, sans-serif'; ctx.fillText(payLbl, rlx, padT+18);
-    ctx.font='600 11px Inter, sans-serif'; ctx.fillText('paga', rlx, padT+40);
+  // (os percentuais de paga/não paga foram movidos para a caixa de contagem abaixo do gráfico)
+  // aviso quando o serviço está inteiramente fora do intervalo de caixa observado
+  if(d.servico > d.hRawMax){
+    ctx.fillStyle='#D65A4C'; ctx.font='600 11px Inter, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.fillText('Serviço acima de todo o caixa gerado — nenhum cenário paga.', padL+W/2, padT+8);
+  } else if(d.servico < d.hRawMin){
+    ctx.fillStyle='#159B63'; ctx.font='600 11px Inter, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.fillText('Serviço abaixo de todo o caixa gerado — todos os cenários pagam.', padL+W/2, padT+8);
   }
 
-  // linha do cenário base (receita central × margem base)
+  // linha do cenário intermediário (mediana do caixa)
   const baseX=X(d.base);
   if(d.hasBase && d.base>=mn && d.base<=mx){
-    ctx.strokeStyle='rgba(23,26,32,.45)'; ctx.lineWidth=1.5; ctx.setLineDash([3,3]);
-    ctx.beginPath(); ctx.moveTo(baseX,padT+H*0.5); ctx.lineTo(baseX,padT+H); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle='rgba(23,26,32,.5)'; ctx.lineWidth=1.5; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(baseX,padT+H*0.42); ctx.lineTo(baseX,padT+H); ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle='#171A20'; ctx.font='600 10px Inter, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
-    ctx.fillText('cenário intermediário', baseX, padT+H*0.5-3);
+    ctx.fillText('cenário intermediário', baseX, padT+H*0.42-3);
   }
 
   // eixo Y (frequência relativa)
@@ -742,6 +812,17 @@ function drawChart(s){
   ctx.save(); ctx.translate(13,padT+H/2); ctx.rotate(-Math.PI/2);
   ctx.fillStyle='#171A20'; ctx.font='600 11px Inter, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText('Frequência de cenários',0,0); ctx.restore();
+
+  // caixa de contagem absoluta (números, não só %)
+  const cb=$('#countBox');
+  if(cb){
+    const nfmt=v=>v.toLocaleString('pt-BR');
+    cb.innerHTML=
+      `<div class="cc red"><div class="lab"><span class="sw" style="background:rgba(214,90,76,.5);width:12px;height:12px;border-radius:3px;display:inline-block"></span>Não paga</div>`+
+      `<div class="num">${nfmt(d.noCount)}</div><div class="sub">de ${nfmt(d.N)} cenários (${fmtProb(1-d.prob)})</div></div>`+
+      `<div class="cc green"><div class="lab"><span class="sw" style="background:rgba(21,155,99,.55);width:12px;height:12px;border-radius:3px;display:inline-block"></span>Paga</div>`+
+      `<div class="num">${nfmt(d.payCount)}</div><div class="sub">de ${nfmt(d.N)} cenários (${fmtProb(d.prob)})</div></div>`;
+  }
 }
 
 /* ---------- Exportar container/gráfico em PNG ---------- */
