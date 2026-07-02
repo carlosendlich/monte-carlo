@@ -12,7 +12,7 @@
     --paper:#FAF9F6;--card:#FFFFFF;--ink:#171A20;--slate:#616977;--line:#E7E4DD;
     --emerald:#159B63;--emerald-soft:rgba(21,155,99,.10);
     --coral:#D65A4C;--coral-soft:rgba(214,90,76,.10);
-    --amber:#C98A1E;--accent:#2C3A86;--accent-soft:#EDEFF8;
+    --amber:#f9b91b;--accent:#11a0d7;--accent-soft:#E4F4FB;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Inter','Helvetica Neue',Helvetica,Arial,system-ui,sans-serif;background:var(--paper);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
@@ -25,7 +25,7 @@
   .btn{font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:10px 16px;border-radius:10px;transition:.15s;white-space:nowrap}
   .btn:hover{border-color:#c9c5bc}
   .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
-  .btn-primary:hover{background:#26327a;border-color:#26327a}
+  .btn-primary:hover{background:#0d84b3;border-color:#0d84b3}
   .btn-ghost{font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--slate);padding:7px 12px;border-radius:9px;transition:.15s;display:inline-flex;align-items:center;gap:6px}
   .btn-ghost:hover{border-color:#c9c5bc;color:var(--ink)}
   .btn-ghost svg{width:14px;height:14px}
@@ -45,7 +45,7 @@
   .verdict-txt p{font-size:14px;color:var(--slate)}
   .tag{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;margin-bottom:10px}
   .tag.ok{background:var(--emerald-soft);color:var(--emerald)}
-  .tag.warn{background:rgba(201,138,30,.12);color:var(--amber)}
+  .tag.warn{background:rgba(249,185,27,.15);color:#b8850a}
   .tag.bad{background:var(--coral-soft);color:var(--coral)}
 
   .years{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
@@ -617,7 +617,7 @@ function runSim(){
 /* ---------- Render ---------- */
 function statusOf(p){
   if(p>=0.85) return {cls:'ok',color:'var(--emerald)',hex:'#159B63',word:'Confortável'};
-  if(p>=0.60) return {cls:'warn',color:'var(--amber)',hex:'#C98A1E',word:'Atenção'};
+  if(p>=0.60) return {cls:'warn',color:'var(--amber)',hex:'#f9b91b',word:'Atenção'};
   return {cls:'bad',color:'var(--coral)',hex:'#D65A4C',word:'Risco alto'};
 }
 function render(s){
@@ -634,9 +634,9 @@ function render(s){
   const tag=$('#verdictTag'); tag.className='tag '+st.cls; tag.textContent=st.word;
   const crit=s.debts[s.critical];
   const critNet=Math.max(0,crit.servico-crit.fin);
-  $('#verdictHead').textContent = p>=0.85 ? 'O proponente paga com folga na maioria dos cenários.'
-     : p>=0.60 ? 'O proponente paga na maioria dos cenários, mas há um ano crítico.'
-     : 'O risco de o proponente não conseguir honrar a dívida é alto.';
+  $('#verdictHead').textContent = p>=0.85 ? 'O fluxo de caixa é suficiente para honrar o serviço da dívida.'
+     : p>=0.60 ? 'O fluxo de caixa é suficiente para honrar o serviço da dívida, mas há um ano crítico.'
+     : 'O fluxo de caixa não é suficiente para honrar o serviço da dívida.';
   $('#verdictBody').textContent = `O ano mais crítico é ${crit.ano}, com serviço de ${fmtCompact(crit.servico)}`+
      (crit.fin>0?` (líquido de financiamento: ${fmtCompact(critNet)})`:'')+`. `+
      `Em ${fmtProb(1-p)} dos cenários simulados o caixa do proponente não cobre a dívida de todos os anos.`;
@@ -754,7 +754,7 @@ function drawChart(s){
   function edgeLabel(cashVal, side){
     if(cashVal<mn || cashVal>mx) return;   // fora da área visível: não desenha
     const x=X(cashVal);
-    ctx.strokeStyle='rgba(44,58,134,.45)'; ctx.lineWidth=1.2; ctx.setLineDash([4,4]);
+    ctx.strokeStyle='rgba(17,160,215,.5)'; ctx.lineWidth=1.2; ctx.setLineDash([4,4]);
     ctx.beginPath(); ctx.moveTo(x,padT); ctx.lineTo(x,padT+H); ctx.stroke(); ctx.setLineDash([]);
     ctx.textBaseline='bottom'; ctx.textAlign = side==='left' ? 'left' : 'right';
     const tx = side==='left' ? x+4 : x-4;
