@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de capacidade de pagamento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root{
+    --paper:#FAF9F6;--card:#FFFFFF;--ink:#171A20;--slate:#616977;--line:#E7E4DD;
+    --emerald:#159B63;--emerald-soft:rgba(21,155,99,.10);
+    --coral:#D65A4C;--coral-soft:rgba(214,90,76,.10);
+    --amber:#C98A1E;--accent:#2C3A86;--accent-soft:#EDEFF8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter','Helvetica Neue',Helvetica,Arial,system-ui,sans-serif;background:var(--paper);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 24px 64px}
+
+  header.top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:28px}
+  .brand-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  h1{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:6px}
+  header.top p.sub{color:var(--slate);font-size:14px;margin-top:6px;max-width:520px}
+  .btn{font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:10px 16px;border-radius:10px;transition:.15s;white-space:nowrap}
+  .btn:hover{border-color:#c9c5bc}
+  .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn-primary:hover{background:#26327a;border-color:#26327a}
+  .btn-ghost{font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--slate);padding:7px 12px;border-radius:9px;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+  .btn-ghost:hover{border-color:#c9c5bc;color:var(--ink)}
+  .btn-ghost svg{width:14px;height:14px}
+
+  .empty{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:56px 32px;text-align:center}
+  .empty h2{font-size:18px;font-weight:600;margin-bottom:8px}
+  .empty p{color:var(--slate);font-size:14px;max-width:420px;margin:0 auto 22px}
+
+  .verdict{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px;display:flex;gap:28px;align-items:center;margin-bottom:20px;position:relative}
+  .gauge{flex:0 0 auto;position:relative;width:132px;height:132px}
+  .gauge svg{transform:rotate(-90deg)}
+  .gauge .pct{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .gauge .pct b{font-size:34px;font-weight:700;letter-spacing:-.02em;line-height:1}
+  .gauge .pct span{font-size:11px;color:var(--slate);margin-top:2px}
+  .verdict-txt h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--slate);font-weight:600;margin-bottom:8px}
+  .verdict-txt .head{font-size:20px;font-weight:700;letter-spacing:-.01em;margin-bottom:8px}
+  .verdict-txt p{font-size:14px;color:var(--slate)}
+  .tag{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;margin-bottom:10px}
+  .tag.ok{background:var(--emerald-soft);color:var(--emerald)}
+  .tag.warn{background:rgba(201,138,30,.12);color:var(--amber)}
+  .tag.bad{background:var(--coral-soft);color:var(--coral)}
+
+  .years{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+  .ycard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .ycard .yr{font-size:13px;color:var(--slate);font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .ycard .dot{width:9px;height:9px;border-radius:50%}
+  .ycard .big{font-size:26px;font-weight:700;letter-spacing:-.02em;margin:8px 0 2px}
+  .ycard .lbl{font-size:12px;color:var(--slate)}
+  .ycard .bar{height:6px;border-radius:99px;background:var(--line);margin-top:12px;overflow:hidden}
+  .ycard .bar i{display:block;height:100%;border-radius:99px}
+  .ycard .svc{font-size:11px;color:var(--slate);margin-top:10px}
+  .ycard .fin{font-size:11px;color:var(--emerald);margin-top:3px;font-weight:600}
+
+  .chartcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px}
+  .charthead{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+  .charthead h3{font-size:15px;font-weight:600;margin-bottom:2px}
+  .charthead .chint{font-size:13px;color:var(--slate);max-width:560px}
+  .charthead .headright{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .yearsel{font-family:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:#fff;color:var(--ink)}
+  .legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:14px;font-size:12px;color:var(--slate)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .legend .sw{width:14px;height:14px;border-radius:4px;flex:0 0 auto}
+  .canvas-box{position:relative;width:100%}
+  canvas{width:100%;display:block}
+
+  .overlay{position:fixed;inset:0;background:rgba(23,26,32,.42);display:flex;align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto;z-index:50}
+  .overlay.hidden{display:none}
+  .modal{background:var(--card);border-radius:18px;width:100%;max-width:620px;box-shadow:0 24px 60px rgba(23,26,32,.18)}
+  .modal .mhead{padding:24px 28px 4px}
+  .modal .mhead h2{font-size:19px;font-weight:700;letter-spacing:-.01em}
+  .modal .mhead p{font-size:13px;color:var(--slate);margin-top:4px}
+  .mbody{padding:16px 28px 8px}
+  .field{margin-bottom:18px}
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+  .field .hint{font-size:12px;color:var(--slate);font-weight:400;margin-top:5px}
+  .lbl-info{display:inline-flex;align-items:center;gap:7px}
+  .info-btn{width:17px;height:17px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--slate);font-size:11px;font-weight:700;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-style:italic;font-family:Georgia,serif;transition:.15s}
+  .info-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .info-pop{margin-top:10px;border:1px solid var(--line);border-radius:12px;background:#FCFBF9;padding:14px 16px;display:none}
+  .info-pop.open{display:block}
+  .info-pop .di{margin-bottom:12px}
+  .info-pop .di:last-child{margin-bottom:0}
+  .info-pop .di b{font-size:13px;color:var(--ink)}
+  .info-pop .di p{font-size:12px;color:var(--slate);margin-top:3px;line-height:1.55}
+  .info-pop .di .ex{font-size:12px;color:var(--accent);margin-top:3px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  input,select{font-family:inherit;font-size:15px;width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 13px;background:#fff;color:var(--ink);transition:.15s}
+  input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .prefix{position:relative}
+  .prefix span{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--slate);font-size:14px;pointer-events:none}
+  .prefix input{padding-left:34px}
+
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .seg button{font-family:inherit;font-size:13px;font-weight:600;padding:9px 14px;border:none;background:none;cursor:pointer;color:var(--slate);transition:.15s}
+  .seg button.active{background:var(--accent);color:#fff}
+  .seg button+button{border-left:1px solid var(--line)}
+
+  /* Slider de cenários */
+  .rangewrap{display:flex;align-items:center;gap:14px}
+  .rangewrap input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:99px;background:var(--line);outline:none;padding:0}
+  .rangewrap input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:3px solid #fff;box-shadow:0 1px 4px rgba(23,26,32,.25)}
+  .rangewrap input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:3px solid #fff;box-shadow:0 1px 4px rgba(23,26,32,.25)}
+  .rangewrap .scenbox{position:relative;flex:0 0 auto}
+  .rangewrap .scenbox span{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--slate);font-size:11px;pointer-events:none}
+  .rangewrap .scenbox input{width:118px;padding:9px 11px 9px 11px;text-align:right;font-size:14px;font-weight:600}
+
+  .sec-title{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--slate);font-weight:700;margin:22px 0 12px;display:flex;align-items:center;gap:10px}
+  .sec-title::after{content:"";height:1px;background:var(--line);flex:1}
+
+  .note{font-size:12px;color:var(--slate);margin:-4px 0 14px;line-height:1.55}
+  .note b{color:var(--ink)}
+
+  .yblock{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:#fff}
+  .yblock-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .yblock-h .ylab{font-size:12px;color:var(--slate);font-weight:600}
+  .yblock-h input{max-width:120px;padding:8px 11px;font-size:14px}
+  .yblock-h .rm{margin-left:auto}
+  .ymoney{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .ymoney .mini{font-size:11px;color:var(--slate);margin-bottom:4px;display:block}
+  .ymoney input{padding:9px 11px;font-size:14px}
+  .varbox{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#FCFBF9}
+  .varhead{margin-bottom:8px}
+  .vartag{font-size:11px;font-weight:700;letter-spacing:.02em}
+  .vartag.up{color:var(--emerald)}
+  .vartag.dn{color:var(--coral)}
+  .rm{border:1px solid var(--line);background:#fff;border-radius:9px;width:38px;height:38px;cursor:pointer;color:var(--coral);font-size:18px;line-height:1}
+  .rm:hover{background:var(--coral-soft)}
+  .addrow{font-size:13px;color:var(--accent);font-weight:600;background:none;border:none;cursor:pointer;padding:4px 0;margin-top:2px}
+
+  .mfoot{padding:18px 28px 24px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--line);margin-top:8px}
+
+  @media(max-width:600px){
+    .verdict{flex-direction:column;text-align:center}
+    .ymoney{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="brand-eyebrow">Análise de risco financeiro</div>
+      <h1>Capacidade de pagamento da dívida</h1>
+      <p class="sub">Simulação de Monte Carlo. A ferramenta estima a chance de o caixa gerado cobrir o serviço da dívida de cada ano.</p>
+    </div>
+    <button class="btn btn-primary" id="editBtn" style="display:none">Editar premissas</button>
+  </header>
+
+  <section id="emptyState" class="empty">
+    <h2>Comece preenchendo as premissas</h2>
+    <p>Informe a receita líquida, o financiamento e a dívida de cada ano. A simulação roda no seu navegador, nada é enviado para fora.</p>
+    <button class="btn btn-primary" id="openBtn">Preencher premissas</button>
+  </section>
+
+  <section id="results" style="display:none">
+    <div class="verdict" id="verdictCard">
+      <div class="gauge">
+        <svg width="132" height="132" viewBox="0 0 132 132">
+          <circle cx="66" cy="66" r="56" fill="none" stroke="var(--line)" stroke-width="12"></circle>
+          <circle id="gaugeArc" cx="66" cy="66" r="56" fill="none" stroke="var(--emerald)" stroke-width="12" stroke-linecap="round" stroke-dasharray="351.86" stroke-dashoffset="351.86"></circle>
+        </svg>
+        <div class="pct"><b id="gaugePct">0%</b><span>chance de pagar</span></div>
+      </div>
+      <div class="verdict-txt">
+        <h2>Veredito geral</h2>
+        <span class="tag ok" id="verdictTag">-</span>
+        <div class="head" id="verdictHead">-</div>
+        <p id="verdictBody">-</p>
+      </div>
+      <button class="btn-ghost" data-export="verdictCard" data-name="veredito" style="position:absolute;top:16px;right:16px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        PNG
+      </button>
+    </div>
+
+    <div class="years" id="yearCards"></div>
+
+    <!-- PANORAMA: todos os anos em um só gráfico -->
+    <div class="chartcard" id="panoramaCard" style="margin-bottom:20px">
+      <div class="charthead">
+        <div>
+          <h3>Panorama — chance de pagar por ano</h3>
+          <p class="chint">Cada barra é um ano. A altura preenchida é a probabilidade de o caixa gerado cobrir o serviço da dívida daquele ano. A cor segue o semáforo de risco.</p>
+        </div>
+        <div class="headright">
+          <button class="btn-ghost" data-export="panoramaCard" data-name="panorama">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            PNG
+          </button>
+        </div>
+      </div>
+      <div class="canvas-box"><canvas id="panorama"></canvas></div>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--emerald)"></i>≥ 85% confortável</span>
+        <span><i class="sw" style="background:var(--amber)"></i>60–85% atenção</span>
+        <span><i class="sw" style="background:var(--coral)"></i>&lt; 60% risco alto</span>
+      </div>
+    </div>
+
+    <!-- MAPA DE RISCO: detalhe de um ano -->
+    <div class="chartcard" id="mapaCard">
+      <div class="charthead">
+        <div>
+          <h3 id="chartTitle">Mapa de risco</h3>
+          <p class="chint">Distribuição do caixa gerado no ano ao longo de todos os cenários simulados. A linha vertical é o serviço da dívida: cenários à esquerda (vermelho) não pagam, à direita (verde) pagam.</p>
+        </div>
+        <div class="headright">
+          <select id="chartYear" class="yearsel"></select>
+          <button class="btn-ghost" data-export="mapaCard" data-name="mapa-de-risco">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            PNG
+          </button>
+        </div>
+      </div>
+      <div class="canvas-box"><canvas id="chart"></canvas></div>
+      <div class="legend">
+        <span><i class="sw" style="background:rgba(214,90,76,.5)"></i>Não paga</span>
+        <span><i class="sw" style="background:rgba(21,155,99,.55)"></i>Paga</span>
+        <span><i class="sw" style="height:0;border:none;border-top:2px solid var(--ink)"></i>Serviço da dívida</span>
+        <span><i class="sw" style="height:0;border:none;border-top:2px dashed var(--ink)"></i>Cenário intermediário</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="overlay hidden" id="overlay">
+  <div class="modal">
+    <div class="mhead">
+      <h2>Premissas da simulação</h2>
+      <p>Preencha com os números da empresa. Você pode ajustar e simular quantas vezes quiser.</p>
+    </div>
+    <div class="mbody">
+
+      <div class="sec-title">Dívida e receita por ano</div>
+      <p class="note"><b>Receita líquida</b> é a base sobre a qual a margem EBITDA é aplicada. Cada ano cresce/cai a partir da receita informada do ano anterior.<br><b>Variação da receita:</b> defina a faixa de crescimento (<b>p/ cima</b>, mín e máx) e/ou de queda (<b>p/ baixo</b>, mín e máx), em %. Ex.: p/ cima 20%–30% = receita sobe entre 20% e 30%. Preencha só um lado, ou deixe tudo em branco para receita fixa.<br><b>Financiamento</b> é entrada de caixa no ano — por exemplo, um empréstimo de capital de giro. Ele soma ao caixa gerado para cobrir o serviço <b>daquele</b> ano. Se não houver, deixe 0.<br><b>Serviço da dívida</b> = juros + amortização do ano.</p>
+      <div id="debtRows"></div>
+      <button class="addrow" id="addRow">+ Adicionar ano</button>
+
+      <div class="sec-title">Margem EBITDA</div>
+      <div class="grid2">
+        <div class="field">
+          <label>Margem esperada</label>
+          <div class="prefix"><span style="left:auto;right:13px">%</span><input id="margemBase" inputmode="numeric" value="25" style="padding-left:13px"></div>
+        </div>
+        <div class="field">
+          <label>Variação da margem</label>
+          <div class="prefix"><span style="left:auto;right:13px">p.p.</span><input id="margemVar" inputmode="numeric" value="8" style="padding-left:13px;padding-right:44px"></div>
+          <div class="hint">Em pontos percentuais. Ex.: 8 = de 17% a 33%.</div>
+        </div>
+      </div>
+
+      <div class="sec-title">Premissas de caixa</div>
+      <div class="grid2">
+        <div class="field">
+          <label>Conversão do EBITDA em caixa</label>
+          <select id="conv">
+            <option value="1">100% (sem desconto)</option>
+            <option value="0.9">90%</option>
+            <option value="0.8">80%</option>
+          </select>
+
+        </div>
+        <div class="field">
+          <label class="lbl-info">Distribuição <button type="button" class="info-btn" id="distInfoBtn" title="O que é cada distribuição?">i</button></label>
+          <select id="dist">
+            <option value="triangular">Triangular (base mais provável)</option>
+            <option value="uniforme">Uniforme (faixa toda igual)</option>
+            <option value="normal">Normal (sino na base)</option>
+          </select>
+          <div class="hint">Como os valores se espalham dentro da faixa.</div>
+          <div class="info-pop" id="distInfoPop">
+            <div class="di">
+              <b>Triangular — base mais provável</b>
+              <p>Pico no centro da faixa: valores no meio aparecem com mais frequência e os extremos são raros. É o padrão. Use quando o valor central é o mais esperado e desvios grandes são improváveis — o caso da maioria das premissas de negócio.</p>
+              <p class="ex">Ex.: margem 10%–14% → a maioria dos cenários fica perto de 12%; 10% e 14% quase não ocorrem.</p>
+            </div>
+            <div class="di">
+              <b>Uniforme — faixa toda igual</b>
+              <p>Todo valor da faixa tem exatamente a mesma chance; nenhum é mais provável que outro. É a escolha mais neutra — use quando você só conhece o piso e o teto, sem opinião sobre o meio. (É a que o simulador usa para a variação de receita.)</p>
+              <p class="ex">Ex.: margem 10%–14% → 11%, 12% e 13,5% têm todos o mesmo peso.</p>
+            </div>
+            <div class="di">
+              <b>Normal — sino no centro</b>
+              <p>Concentra no meio como a triangular, mas com caudas mais suaves. Pode tentar gerar valores fora da faixa nos extremos (o sino não tem limite); o simulador corta para não estourar. Boa quando os desvios seguem um padrão simétrico e a maioria fica perto da média.</p>
+              <p class="ex">Ex.: margem 10%–14% → muitos cenários entre 11,5% e 12,5%, poucos nas pontas.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-title">Número de cenários</div>
+      <div class="rangewrap">
+        <input type="range" id="scenRange" min="5000" max="500000" step="5000" value="100000">
+        <div class="scenbox"><input id="scenNum" inputmode="numeric" value="100.000"></div>
+      </div>
+
+    </div>
+    <div class="mfoot">
+      <button class="btn" id="cancelBtn">Cancelar</button>
+      <button class="btn btn-primary" id="runBtn">Simular</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let lastState = null;
+let exportDprBoost = 1;   // >1 durante a exportação para PNG nítido
+
+/* ---------- Formatação ---------- */
+function fmtCurrency(v){ return v.toLocaleString('pt-BR',{maximumFractionDigits:0}); }
+function fmtProb(p){
+  const pc=p*100;
+  if(pc>0 && pc<1) return pc.toLocaleString('pt-BR',{maximumFractionDigits:1})+'%';
+  if(pc>99 && pc<100) return pc.toLocaleString('pt-BR',{maximumFractionDigits:1})+'%';
+  return Math.round(pc)+'%';
+}
+function fmtCompact(v){
+  if(Math.abs(v)>=1e6) return 'R$ '+(v/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+' mi';
+  if(Math.abs(v)>=1e3) return 'R$ '+(v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:0})+' mil';
+  return 'R$ '+fmtCurrency(v);
+}
+function parseNum(str){ return parseFloat(String(str).replace(/\./g,'').replace(',','.'))||0; }
+function bindCurrency(el){ el.addEventListener('blur',()=>{ const n=parseNum(el.value); el.value=n?fmtCurrency(n):''; }); }
+function rgba(hex,a){ const n=parseInt(hex.slice(1),16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
+function rr(ctx,x,y,w,h,r){
+  r=Math.min(r,Math.abs(w)/2,Math.abs(h)/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+/* ---------- Slider de cenários ---------- */
+const scenRange=$('#scenRange'), scenNum=$('#scenNum');
+function clampScen(v){ v=Math.round(v/5000)*5000; return Math.min(500000,Math.max(5000,v)); }
+scenRange.addEventListener('input',()=>{ scenNum.value=fmtCurrency(parseInt(scenRange.value)); });
+scenNum.addEventListener('blur',()=>{ const v=clampScen(parseNum(scenNum.value)||5000); scenNum.value=fmtCurrency(v); scenRange.value=v; });
+
+/* ---------- Linhas de dívida por ano ---------- */
+const defaultDebt=[
+  {ano:2025,receita:10000000,fin:0,juros:800000,amort:1000000,upMin:null,upMax:null,dnMin:null,dnMax:null},
+  {ano:2026,receita:10000000,fin:0,juros:700000,amort:1400000,upMin:null,upMax:null,dnMin:null,dnMax:null},
+  {ano:2027,receita:10000000,fin:0,juros:500000,amort:1000000,upMin:null,upMax:null,dnMin:null,dnMax:null},
+];
+function addDebtRow(d={ano:'',receita:'',fin:0,juros:'',amort:'',upMin:null,upMax:null,dnMin:null,dnMax:null}){
+  const row=document.createElement('div'); row.className='yblock';
+  const pctIn=(cls,val)=>`<div class="prefix"><span style="left:auto;right:11px;font-size:12px">%</span><input class="${cls}" inputmode="numeric" placeholder="—" value="${val!=null?val:''}" style="padding-left:11px;padding-right:30px"></div>`;
+  row.innerHTML=`
+    <div class="yblock-h">
+      <span class="ylab">Ano</span>
+      <input class="d-ano" inputmode="numeric" value="${d.ano}">
+      <button class="rm" title="Remover">&times;</button>
+    </div>
+    <div class="ymoney">
+      <div><span class="mini">Receita líquida (R$)</span><input class="d-receita" inputmode="numeric" value="${d.receita?fmtCurrency(d.receita):''}"></div>
+      <div><span class="mini">Financiamento (R$)</span><input class="d-fin" inputmode="numeric" value="${fmtCurrency(d.fin||0)}"></div>
+      <div><span class="mini">Juros (R$)</span><input class="d-juros" inputmode="numeric" value="${d.juros?fmtCurrency(d.juros):''}"></div>
+      <div><span class="mini">Amortização (R$)</span><input class="d-amort" inputmode="numeric" value="${d.amort?fmtCurrency(d.amort):''}"></div>
+    </div>
+    <div class="varbox">
+      <div class="varhead"><span class="vartag up">▲ Receita p/ cima</span></div>
+      <div class="ymoney">
+        <div><span class="mini">mínimo (%)</span>${pctIn('d-upmin',d.upMin)}</div>
+        <div><span class="mini">máximo (%)</span>${pctIn('d-upmax',d.upMax)}</div>
+      </div>
+    </div>
+    <div class="varbox">
+      <div class="varhead"><span class="vartag dn">▼ Receita p/ baixo</span></div>
+      <div class="ymoney">
+        <div><span class="mini">mínimo (%)</span>${pctIn('d-dnmin',d.dnMin)}</div>
+        <div><span class="mini">máximo (%)</span>${pctIn('d-dnmax',d.dnMax)}</div>
+      </div>
+    </div>`;
+  row.querySelector('.rm').onclick=()=>row.remove();
+  ['.d-receita','.d-fin','.d-juros','.d-amort'].forEach(sel=>bindCurrency(row.querySelector(sel)));
+  $('#debtRows').appendChild(row);
+}
+defaultDebt.forEach(addDebtRow);
+$('#addRow').onclick=()=>addDebtRow();
+
+/* ---------- Modal ---------- */
+const openModal=()=>$('#overlay').classList.remove('hidden');
+const closeModal=()=>$('#overlay').classList.add('hidden');
+$('#openBtn').onclick=openModal;
+$('#editBtn').onclick=openModal;
+$('#cancelBtn').onclick=closeModal;
+$('#overlay').onclick=e=>{ if(e.target===$('#overlay')) closeModal(); };
+$('#distInfoBtn').onclick=()=>$('#distInfoPop').classList.toggle('open');
+
+/* ---------- Amostradores ---------- */
+function sampleTri(a,c,b){ const u=Math.random(),f=(c-a)/(b-a); return u<f? a+Math.sqrt(u*(b-a)*(c-a)) : b-Math.sqrt((1-u)*(b-a)*(b-c)); }
+let spare=null;
+function stdNorm(){ if(spare!==null){const s=spare;spare=null;return s;} const u=Math.random()||1e-9,v=Math.random(),r=Math.sqrt(-2*Math.log(u)); spare=r*Math.sin(2*Math.PI*v); return r*Math.cos(2*Math.PI*v); }
+function sampler(base,dev,mode,dir){
+  let lo,hi;
+  if(dir==='mais'){lo=base;hi=base+dev;}
+  else if(dir==='menos'){lo=base-dev;hi=base;}
+  else{lo=base-dev;hi=base+dev;}
+  if(mode==='uniforme') return ()=>lo+Math.random()*(hi-lo);
+  if(mode==='normal'){
+    const sd=dev/2;
+    if(dir==='mais')  return ()=>base+Math.abs(stdNorm())*sd;
+    if(dir==='menos') return ()=>base-Math.abs(stdNorm())*sd;
+    return ()=>base+stdNorm()*sd;
+  }
+  return ()=>sampleTri(lo,base,hi);   // triangular
+}
+
+/* ---------- Simulação ---------- */
+$('#runBtn').onclick=runSim;
+function runSim(){
+  const N=clampScen(parseNum(scenNum.value)||100000);
+  const margemBase=parseNum($('#margemBase').value)/100;
+  const margemVar =parseNum($('#margemVar').value)/100;
+  const dist=$('#dist').value;
+  const conv=parseFloat($('#conv').value);
+
+  let debts=[...document.querySelectorAll('.yblock')].map(r=>{
+    const pv=sel=>{ const v=r.querySelector(sel).value.trim(); return v===''?null:parseNum(v)/100; };
+    return {
+      ano:r.querySelector('.d-ano').value.trim(),
+      receita:parseNum(r.querySelector('.d-receita').value),
+      fin:parseNum(r.querySelector('.d-fin').value),
+      servico:parseNum(r.querySelector('.d-juros').value)+parseNum(r.querySelector('.d-amort').value),
+      upMin:pv('.d-upmin'), upMax:pv('.d-upmax'),   // crescimento (positivos)
+      dnMin:pv('.d-dnmin'), dnMax:pv('.d-dnmax')    // queda (magnitudes positivas)
+    };
+  }).filter(d=>d.ano && d.servico>0);
+
+  if(!margemBase || !debts.length){ alert('Preencha a margem e ao menos um ano de dívida.'); return; }
+  if(debts.some(d=>!d.receita)){ alert('Preencha a receita líquida de cada ano.'); return; }
+
+  const drawM=sampler(margemBase,margemVar,dist,'ambos');
+  // Modelo de receita: cada ano cresce/cai a partir da receita INFORMADA do ano anterior,
+  // usando os intervalos de variação (%) DO ANO ANTERIOR. O 1º ano usa os seus próprios.
+  // snapshot dos campos crus de variação (antes de qualquer sobrescrita)
+  debts.forEach(d=>{ d._upMin=d.upMin; d._upMax=d.upMax; d._dnMin=d.dnMin; d._dnMax=d.dnMax; });
+  debts.forEach((d,j)=>{
+    const src = j>0 ? debts[j-1] : d;
+    d.revBase = src.receita;
+    d.revBaseYear = j>0 ? src.ano : null;
+    // herda os intervalos de variação do ANO ANTERIOR (a partir do snapshot cru)
+    let upMin=src._upMin, upMax=src._upMax, dnMin=src._dnMin, dnMax=src._dnMax;
+    const upOn = (upMax!=null && upMax>0) || (upMin!=null && upMin>0);
+    const dnOn = (dnMax!=null && dnMax>0) || (dnMin!=null && dnMin>0);
+    if(upOn){ upMin=Math.max(0,upMin||0); upMax=Math.max(upMin,upMax||upMin); }
+    if(dnOn){ dnMin=Math.max(0,dnMin||0); dnMax=Math.max(dnMin,dnMax||dnMin); }
+    d.upOn=upOn; d.dnOn=dnOn;
+    d.upMin=upMin; d.upMax=upMax; d.dnMin=dnMin; d.dnMax=dnMax;
+    // fator de crescimento mínimo/máximo alcançável (para limites do eixo)
+    let gMin=0, gMax=0;
+    if(upOn && dnOn){ gMin=-dnMax; gMax=+upMax; }
+    else if(upOn){ gMin=+upMin; gMax=+upMax; }
+    else if(dnOn){ gMin=-dnMax; gMax=-dnMin; }
+    d.recLo = d.revBase*(1+gMin);
+    d.recHi = d.revBase*(1+gMax);
+    d.recMid= (d.recLo+d.recHi)/2;
+  });
+  const drawR=debts.map(d=>{
+    if(!d.upOn && !d.dnOn) return ()=>d.revBase;                 // receita fixa
+    const upLo=d.revBase*(1+d.upMin), upHi=d.revBase*(1+d.upMax);
+    const dnLo=d.revBase*(1-d.dnMax), dnHi=d.revBase*(1-d.dnMin); // dnLo<dnHi (menor queda = mais receita)
+    if(d.upOn && d.dnOn){
+      return ()=> Math.random()<0.5 ? upLo+Math.random()*(upHi-upLo)   // 50/50 entre os dois blocos
+                                    : dnLo+Math.random()*(dnHi-dnLo);
+    }
+    if(d.upOn) return ()=>upLo+Math.random()*(upHi-upLo);
+    return ()=>dnLo+Math.random()*(dnHi-dnLo);                     // só queda
+  });
+  const counts=debts.map(()=>0); let allOk=0;
+  const caixaArr=debts.map(()=>new Float64Array(N));
+
+  for(let i=0;i<N;i++){
+    let m=drawM(); if(m<0)m=0;
+    let all=true;
+    for(let j=0;j<debts.length;j++){
+      const rev=drawR[j]();
+      const caixa=rev*m*conv + debts[j].fin;   // receita variável × margem × conversão + financiamento
+      caixaArr[j][i]=caixa;
+      if(caixa>=debts[j].servico) counts[j]++; else all=false;
+    }
+    if(all) allOk++;
+  }
+
+  const BINS=46;
+  debts.forEach((d,j)=>{
+    d.prob=counts[j]/N;
+    // cenário base = receita central × margem base. Quando há DOIS blocos (cima e baixo),
+    // o centro cai no vão vazio entre eles, então não há um "base" coerente => não desenha.
+    d.hasBase = !(d.upOn && d.dnOn);
+    const recCentral = d.upOn && !d.dnOn ? (d.revBase*(1+d.upMin)+d.revBase*(1+d.upMax))/2
+                     : d.dnOn && !d.upOn ? (d.revBase*(1-d.dnMin)+d.revBase*(1-d.dnMax))/2
+                     : d.revBase;
+    d.base=recCentral*margemBase*conv + d.fin;
+    const a=caixaArr[j]; a.sort();
+    const q=t=>a[Math.min(N-1,Math.floor(t*N))];
+    d.p10=q(.10); d.p25=q(.25); d.p50=q(.50); d.p75=q(.75); d.p90=q(.90);
+    // limites teóricos do histograma = cantos do cenário:
+    //   piso  = menor receita × menor margem   (pior caso coerente)
+    //   teto  = maior receita × maior margem   (melhor caso)
+    const mLo=Math.max(0,margemBase-margemVar), mHi=margemBase+margemVar;
+    d.mLo=mLo; d.mHi=mHi;
+    d.varReceita=(d.upOn||d.dnOn);
+    let mn=d.recLo*mLo*conv + d.fin;   // canto inferior esquerdo
+    let mx=d.recHi*mHi*conv + d.fin;   // canto superior direito
+    // segurança: garante que todas as amostras caibam
+    mn=Math.min(mn,a[0]); mx=Math.max(mx,a[N-1]);
+    if(!(mx>mn)){ mx=mn+1; }
+    const bw=(mx-mn)/BINS;
+    const hist=new Array(BINS).fill(0);
+    for(let i=0;i<N;i++){ let b=Math.floor((a[i]-mn)/bw); if(b<0)b=0; if(b>=BINS)b=BINS-1; hist[b]++; }
+    d.hist=hist; d.hMin=mn; d.hMax=mx; d.hBw=bw; d.hMaxCount=Math.max(...hist);
+  });
+  let critical=0; debts.forEach((d,i)=>{ if(d.prob<debts[critical].prob) critical=i; });
+
+  lastState={N,margemBase,margemVar,dist,conv,debts,allProb:allOk/N,critical,chartYear:critical};
+  render(lastState);
+  closeModal();
+}
+
+/* ---------- Render ---------- */
+function statusOf(p){
+  if(p>=0.85) return {cls:'ok',color:'var(--emerald)',hex:'#159B63',word:'Confortável'};
+  if(p>=0.60) return {cls:'warn',color:'var(--amber)',hex:'#C98A1E',word:'Atenção'};
+  return {cls:'bad',color:'var(--coral)',hex:'#D65A4C',word:'Risco alto'};
+}
+function render(s){
+  $('#emptyState').style.display='none';
+  $('#results').style.display='block';
+  $('#editBtn').style.display='inline-block';
+
+  const p=s.allProb, pct=Math.round(p*100), st=statusOf(p);
+  const circ=2*Math.PI*56;
+  $('#gaugeArc').style.strokeDashoffset=circ*(1-p);
+  $('#gaugeArc').style.stroke=st.color;
+  $('#gaugePct').textContent=pct+'%';
+
+  const tag=$('#verdictTag'); tag.className='tag '+st.cls; tag.textContent=st.word;
+  const crit=s.debts[s.critical];
+  const critNet=Math.max(0,crit.servico-crit.fin);
+  $('#verdictHead').textContent = p>=0.85 ? 'O proponente paga com folga na maioria dos cenários.'
+     : p>=0.60 ? 'O proponente paga na maioria dos cenários, mas há um ano crítico.'
+     : 'O risco de o proponente não conseguir honrar a dívida é alto.';
+  $('#verdictBody').textContent = `O ano mais crítico é ${crit.ano}, com serviço de ${fmtCompact(crit.servico)}`+
+     (crit.fin>0?` (líquido de financiamento: ${fmtCompact(critNet)})`:'')+`. `+
+     `Em ${fmtProb(1-p)} dos cenários simulados o caixa do proponente não cobre a dívida de todos os anos.`;
+
+  const box=$('#yearCards'); box.innerHTML='';
+  s.debts.forEach(d=>{
+    const ppct=Math.round(d.prob*100), ds=statusOf(d.prob);
+    const barW=Math.max(d.prob>0?2:0, ppct);   // barra visível mesmo com <1%
+    const el=document.createElement('div'); el.className='ycard';
+    el.innerHTML=`<div class="yr">${d.ano}<span class="dot" style="background:${ds.color}"></span></div>
+      <div class="big">${fmtProb(d.prob)}</div><div class="lbl">chance de pagar</div>
+      <div class="bar"><i style="width:${barW}%;background:${ds.color}"></i></div>
+      <div class="svc">serviço: ${fmtCompact(d.servico)}</div>`+
+      (d.fin>0?`<div class="fin">+ financiamento: ${fmtCompact(d.fin)}</div>`:'');
+    box.appendChild(el);
+  });
+
+  const sel=$('#chartYear'); sel.innerHTML='';
+  s.debts.forEach((d,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=d.ano; sel.appendChild(o); });
+  sel.value=s.chartYear;
+  sel.onchange=()=>{ s.chartYear=parseInt(sel.value); drawChart(s); };
+
+  drawPanorama(s);
+  drawChart(s);
+}
+
+/* ---------- Gráfico: panorama = barras de probabilidade ---------- */
+function drawPanorama(s){
+  const cv=$('#panorama'), dpr=(window.devicePixelRatio||1)*exportDprBoost;
+  const cssW=cv.parentElement.clientWidth;
+  const cssH=Math.round(Math.min(Math.max(cssW*0.5,300),420));
+  cv.width=cssW*dpr; cv.height=cssH*dpr; cv.style.height=cssH+'px';
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,cssW,cssH);
+
+  const padL=16,padR=16,padT=18,padB=52;
+  const W=cssW-padL-padR, H=cssH-padT-padB;
+  const n=s.debts.length, slot=W/n, bw=Math.min(slot*0.6,132);
+
+  s.debts.forEach((d,i)=>{
+    const cx=padL+slot*(i+0.5), x=cx-bw/2, st=statusOf(d.prob);
+    const full=H, h=full*d.prob;
+    const yFill=padT+full-h;
+    // trilho
+    ctx.fillStyle='#F0EEE8'; rr(ctx,x,padT,bw,full,12); ctx.fill();
+    // preenchimento
+    if(h>0.5){ ctx.fillStyle=st.hex; rr(ctx,x,yFill,bw,h,12); ctx.fill(); }
+
+    const inside=h>60;   // rótulo cabe dentro da barra?
+    // % grande
+    ctx.font='700 28px Inter, sans-serif'; ctx.textAlign='center';
+    if(inside){ ctx.fillStyle='#fff'; ctx.textBaseline='top'; ctx.fillText(fmtProb(d.prob), cx, yFill+10); }
+    else{ ctx.fillStyle=st.hex; ctx.textBaseline='bottom'; ctx.fillText(fmtProb(d.prob), cx, yFill-24); }
+    // palavra de status
+    ctx.font='600 12px Inter, sans-serif';
+    if(inside){ ctx.fillStyle='rgba(255,255,255,.92)'; ctx.textBaseline='top'; ctx.fillText(st.word, cx, yFill+42); }
+    else{ ctx.fillStyle=st.hex; ctx.textBaseline='bottom'; ctx.fillText(st.word, cx, yFill-8); }
+
+    // ano
+    ctx.fillStyle='#171A20'; ctx.font='700 14px Inter, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.fillText(d.ano, cx, padT+H+10);
+    // serviço
+    ctx.fillStyle='#616977'; ctx.font='11px Inter, sans-serif';
+    let sub='serviço '+fmtCompact(d.servico);
+    ctx.fillText(sub, cx, padT+H+28);
+    if(d.fin>0){ ctx.fillStyle='#159B63'; ctx.fillText('+ fin. '+fmtCompact(d.fin), cx, padT+H+42); }
+  });
+}
+
+/* ---------- Gráfico: mapa de risco = histograma do caixa ---------- */
+function drawChart(s){
+  const d=s.debts[s.chartYear];
+  $('#chartTitle').textContent='Mapa de risco '+d.ano;
+
+  const cv=$('#chart'), dpr=(window.devicePixelRatio||1)*exportDprBoost;
+  const cssW=cv.parentElement.clientWidth, cssH=Math.round(Math.min(cssW*0.62,460));
+  cv.width=cssW*dpr; cv.height=cssH*dpr; cv.style.height=cssH+'px';
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,cssW,cssH);
+
+  const padL=68,padR=18,padT=64,padB=46;
+  const W=cssW-padL-padR, H=cssH-padT-padB;
+
+  const mn=d.hMin, mx=d.hMax, bw=d.hBw, BINS=d.hist.length, hmax=d.hMaxCount||1;
+  const X=v=>padL+((v-mn)/(mx-mn))*W;
+  const Yb=c=>padT+H-(c/hmax)*H;
+  const servX=X(d.servico);
+  const st=statusOf(d.prob);
+  const payLbl=fmtProb(d.prob), noLbl=fmtProb(1-d.prob);
+
+  // grade
+  ctx.strokeStyle='#F0EEE8';
+  for(let t=0;t<=3;t++){ const y=padT+H-(t/3)*H; ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+W,y); ctx.stroke(); }
+
+  // barras: vermelho abaixo do serviço, verde a partir dele.
+  // A barra que a linha do serviço atravessa é pintada em duas partes.
+  const RED='rgba(214,90,76,.5)', GREEN='rgba(21,155,99,.55)';
+  for(let b=0;b<BINS;b++){
+    const binLo=mn+b*bw, binHi=mn+(b+1)*bw;
+    const x0=X(binLo), x1=X(binHi), y=Yb(d.hist[b]);
+    const bx=x0+0.5, bw2=Math.max(0.5,x1-x0-1), bh=padT+H-y;
+    if(d.servico>binLo && d.servico<binHi){
+      // serviço cruza esta barra: parte esquerda não paga (vermelho), direita paga (verde)
+      const xs=X(d.servico);
+      ctx.fillStyle=RED;   ctx.fillRect(bx, y, Math.max(0,xs-bx), bh);
+      ctx.fillStyle=GREEN; ctx.fillRect(xs, y, Math.max(0,bx+bw2-xs), bh);
+    } else {
+      const paga=binLo>=d.servico;   // barra inteira de um lado só
+      ctx.fillStyle=paga?GREEN:RED;
+      ctx.fillRect(bx, y, bw2, bh);
+    }
+  }
+
+  // ===== limites das bordas: linhas pontilhadas (canto inferior e superior) =====
+  // Borda esquerda = menor receita × menor margem. Borda direita = maior receita × maior margem.
+  const mLo=d.mLo, mHi=d.mHi, varR=d.varReceita;
+  function marginBound(cashVal, m, rev, side){
+    const x=X(cashVal);
+    ctx.strokeStyle='rgba(44,58,134,.55)'; ctx.lineWidth=1.4; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(x,padT); ctx.lineTo(x,padT+H); ctx.stroke(); ctx.setLineDash([]);
+    ctx.textBaseline='bottom'; ctx.textAlign = side==='left' ? 'left' : 'right';
+    const tx = side==='left' ? x+4 : x-4;
+    // linha 1: margem
+    ctx.fillStyle='#2C3A86'; ctx.font='700 12px Inter, sans-serif';
+    ctx.fillText('marg. '+(m*100).toFixed(0)+'%', tx, padT-29);
+    // linha 2: receita do canto (só quando varia)
+    ctx.fillStyle='#616977'; ctx.font='10px Inter, sans-serif';
+    if(varR){ ctx.fillText('rec. '+fmtCompact(rev), tx, padT-17); }
+    // linha 3: caixa resultante
+    ctx.fillStyle='#171A20'; ctx.font='600 10px Inter, sans-serif';
+    ctx.fillText(fmtCompact(cashVal), tx, varR?padT-5:padT-17);
+  }
+  marginBound(mn, mLo, d.recLo, 'left');
+  marginBound(mx, mHi, d.recHi, 'right');
+  // rótulo discreto do que a régua representa
+  ctx.fillStyle='#616977'; ctx.font='600 10px Inter, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+  let ruleTxt = 'margem '+(mLo*100).toFixed(0)+'%–'+(mHi*100).toFixed(0)+'%';
+  if(varR){
+    const parts=[];
+    if(d.upOn) parts.push('+'+(d.upMin*100).toFixed(0)+'% a +'+(d.upMax*100).toFixed(0)+'%');
+    if(d.dnOn) parts.push('−'+(d.dnMin*100).toFixed(0)+'% a −'+(d.dnMax*100).toFixed(0)+'%');
+    ruleTxt += '  ·  receita '+parts.join(' ou ')+(d.revBaseYear?' sobre '+d.revBaseYear:'');
+  }
+  ctx.fillText(ruleTxt, padL+W/2, padT-17);
+
+  // linha do serviço
+  ctx.strokeStyle='#171A20'; ctx.lineWidth=2; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(servX,padT); ctx.lineTo(servX,padT+H); ctx.stroke();
+  ctx.fillStyle='#171A20'; ctx.font='600 11px Inter, sans-serif'; ctx.textBaseline='top';
+  const servLbl='Serviço '+fmtCompact(d.servico);
+  // rótulo dentro do plot, ao lado da linha; vira de lado perto das bordas
+  if(servX > padL+W-70){ ctx.textAlign='right'; ctx.fillText(servLbl, servX-5, padT+3); }
+  else{ ctx.textAlign='left'; ctx.fillText(servLbl, servX+5, padT+3); }
+
+  // rótulos das zonas: % não paga (esquerda) e % paga (direita)
+  const midLeft=padL+(servX-padL)/2;
+  const midRight=servX+(padL+W-servX)/2;
+  if(servX-padL>60){
+    ctx.fillStyle='#D65A4C'; ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.font='700 22px Inter, sans-serif'; ctx.fillText(noLbl, midLeft, padT+18);
+    ctx.font='600 11px Inter, sans-serif'; ctx.fillText('não paga', midLeft, padT+44);
+  }
+  if(padL+W-servX>50){
+    const rlx=Math.min(midRight, padL+W-22);
+    ctx.fillStyle='#159B63'; ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.font='700 18px Inter, sans-serif'; ctx.fillText(payLbl, rlx, padT+18);
+    ctx.font='600 11px Inter, sans-serif'; ctx.fillText('paga', rlx, padT+40);
+  }
+
+  // linha do cenário base (receita central × margem base)
+  const baseX=X(d.base);
+  if(d.hasBase && d.base>=mn && d.base<=mx){
+    ctx.strokeStyle='rgba(23,26,32,.45)'; ctx.lineWidth=1.5; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(baseX,padT+H*0.5); ctx.lineTo(baseX,padT+H); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='#171A20'; ctx.font='600 10px Inter, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+    ctx.fillText('cenário intermediário', baseX, padT+H*0.5-3);
+  }
+
+  // eixo Y (frequência relativa)
+  ctx.fillStyle='#616977'; ctx.font='11px Inter, sans-serif'; ctx.textAlign='right'; ctx.textBaseline='middle';
+  for(let t=0;t<=3;t++){ const y=padT+H-(t/3)*H; ctx.fillText(Math.round((t/3)*100)+'%', padL-8, y); }
+
+  // eixo X (caixa)
+  ctx.fillStyle='#616977'; ctx.font='11px Inter, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='top';
+  for(let t=0;t<=4;t++){ const v=mn+(t/4)*(mx-mn); ctx.fillText(fmtCompact(v), padL+(t/4)*W, padT+H+8); }
+  ctx.fillStyle='#171A20'; ctx.font='600 12px Inter, sans-serif';
+  ctx.fillText('Caixa gerado no ano (R$)', padL+W/2, padT+H+24);
+  // eixo Y label
+  ctx.save(); ctx.translate(13,padT+H/2); ctx.rotate(-Math.PI/2);
+  ctx.fillStyle='#171A20'; ctx.font='600 11px Inter, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('Frequência de cenários',0,0); ctx.restore();
+}
+
+/* ---------- Exportar container/gráfico em PNG ---------- */
+function exportCard(cardId,name){
+  const card=document.getElementById(cardId);
+  const btns=[...card.querySelectorAll('.btn-ghost')];
+  btns.forEach(b=>b.style.visibility='hidden');
+
+  const finish=()=>btns.forEach(b=>b.style.visibility='');
+
+  if(typeof html2canvas!=='function'){
+    finish();
+    alert('Biblioteca de exportação não carregou. Verifique a conexão e recarregue a página.');
+    return;
+  }
+
+  // Redesenha os gráficos em resolução maior para o PNG sair nítido.
+  const hasCanvas = card.querySelector('canvas');
+  if(hasCanvas && lastState){ exportDprBoost=3; drawPanorama(lastState); drawChart(lastState); }
+
+  const restore=()=>{ if(hasCanvas && lastState){ exportDprBoost=1; drawPanorama(lastState); drawChart(lastState); } finish(); };
+
+  html2canvas(card,{
+    scale:2,
+    backgroundColor:'#FFFFFF',
+    useCORS:true,
+    logging:false,
+    imageTimeout:0
+  }).then(canvas=>{
+    canvas.toBlob(b=>{
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(b);
+      a.download=name+'.png';
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+      restore();
+    },'image/png');
+  }).catch(()=>{
+    restore();
+    alert('Não foi possível gerar o PNG neste navegador.');
+  });
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-export]'); if(!b)return;
+  exportCard(b.dataset.export,b.dataset.name);
+});
+
+window.addEventListener('resize',()=>{ if(lastState){ drawPanorama(lastState); drawChart(lastState); } });
+openModal();
+</script>
+</body>
+</html>
